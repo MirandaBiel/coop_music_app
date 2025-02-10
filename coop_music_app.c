@@ -945,11 +945,16 @@ void test_uart_connection_device2() {
         // Define o prazo para aguardar 200 ms (200000 microsegundos)
         absolute_time_t receive_deadline = delayed_by_us(get_absolute_time(), 200 * 1000);
 
+        gpio_put(GREEN_PIN, 0);
+        gpio_put(RED_PIN, 0);
+        
         // Aguarda até que o tempo definido seja atingido ou até receber o caractere 's'
         while (!time_reached(receive_deadline)) {
             if (uart_is_readable(uart0)) {
                 char received = uart_getc(uart0);
                 if (received == 's') {
+                    gpio_put(GREEN_PIN, 1);
+                    gpio_put(RED_PIN, 1);
                     received_flag = true;
                     break;
                 }
@@ -1124,7 +1129,7 @@ int main() {
         
         while (connection_status)
         {
-            process_received_numbers();
+            //process_received_numbers();
             test_uart_connection_device2();
         }
         
