@@ -54,6 +54,11 @@ void uart_receive_string(uart_inst_t *uart, char *buffer, int max_len);
 int string_to_int(const char *str);
 bool connection_status = false;       // Variável para indicar o status da conexão UART
 
+// Variáveis globais para armazenar os números recebidos via UART
+int uart_wrap1 = 0;
+int uart_wrap2 = 0;
+int correct_buzzer_uart = 0;
+
 // Estrutura de dados
 
 // Estrutura de número complexo
@@ -1047,6 +1052,25 @@ int string_to_int(const char *str) {
     return atoi(str);
 }
 
+char process_received_numbers() {
+    char buffer[16];  // Buffer para armazenar cada string recebida
+    
+    // Recebe e converte a primeira string
+    uart_receive_string(uart0, buffer, sizeof(buffer));
+    uart_wrap1 = string_to_int(buffer);
+    
+    // Recebe e converte a segunda string
+    uart_receive_string(uart0, buffer, sizeof(buffer));
+    uart_wrap2 = string_to_int(buffer);
+    
+    // Recebe e converte a terceira string
+    uart_receive_string(uart0, buffer, sizeof(buffer));
+    correct_buzzer_uart = string_to_int(buffer);
+
+    printf("NUMEROS RECEBIDOS");
+
+}
+
 //                                             Função principal
 
 int main() {
@@ -1058,11 +1082,11 @@ int main() {
     npInit(LED_PIN, LED_COUNT);
 
     // Inicialização do Joystick
-    setup_adc_joystick();
+    //setup_adc_joystick();
 
     // Define variáveis para a leitura da posição do Joystick no eixo x
-    uint adc_x_raw;
-    uint bar_x_pos;
+    //uint adc_x_raw;
+    //uint bar_x_pos;
 
     // Inicialização do display OLED
     setup_oled();
@@ -1074,11 +1098,11 @@ int main() {
     render_on_display(ssd, &frame_area);
 
     // Define a tela mostrada e a tela desejada
-    int tela = 1;
-    int tela_showed = 1;
+    //int tela = 1;
+    //int tela_showed = 1;
 
     // Mostra a tela inicial
-    display_screen(tela1, 7, ssd);
+    //display_screen(tela1, 7, ssd);
 
     // Inicialização dos Botões
     setup_buttons();
@@ -1092,206 +1116,221 @@ int main() {
 
     // Loop de execução
     while (true) {
-        // Ler a posição do Joystick
-        adc_x_raw = adc_read();
 
-        // Calcula a posição do cursor na "barra" (uma abstração criada)
-        bar_x_pos = adc_x_raw * BAR_WIDTH / ADC_MAX;
-
-        // Define a próxima tela com base na posição do cursor na barra
-        if (bar_x_pos >= 30 && bar_x_pos <= 40) {
-            if(tela != 2){
-                tela = tela + 1;
-            }
-        }
-        if (bar_x_pos >= 0 && bar_x_pos <= 10) {
-            if(tela != 0){
-                tela = tela - 1;
-            }
-        }
-
-        // Testa se a tela mudou. Se sim, troca para a tela escolhida
-        if(tela_showed != tela){
-            tela_showed = tela;
-            if(tela_showed==0){
-                display_screen(tela0, 7, ssd);
-            }
-            if(tela_showed==1){
-                display_screen(tela1, 7, ssd);
-            }
-            if(tela_showed==2){
-                display_screen(tela2, 7, ssd);
-            }
-            sleep_ms(500);
-        }
-
-        // Vê se o botão do Joystick foi pressionado
-        button_js_pressed = !gpio_get(JOYSTICK_BUTTON);
+        do
+        {
+            test_uart_connection_device2();
+        } while (!connection_status);
         
-        // Se o botão do Joystick está pressionado, entra na funcionalidade da tela mostrada
-        if(button_js_pressed){
+        while (connection_status)
+        {
+            process_received_numbers();
+            test_uart_connection_device2();
+        }
+        
+
+        if(false){
+        // // Ler a posição do Joystick
+        // adc_x_raw = adc_read();
+
+        // // Calcula a posição do cursor na "barra" (uma abstração criada)
+        // bar_x_pos = adc_x_raw * BAR_WIDTH / ADC_MAX;
+
+        // // Define a próxima tela com base na posição do cursor na barra
+        // if (bar_x_pos >= 30 && bar_x_pos <= 40) {
+        //     if(tela != 2){
+        //         tela = tela + 1;
+        //     }
+        // }
+        // if (bar_x_pos >= 0 && bar_x_pos <= 10) {
+        //     if(tela != 0){
+        //         tela = tela - 1;
+        //     }
+        // }
+
+        // // Testa se a tela mudou. Se sim, troca para a tela escolhida
+        // if(tela_showed != tela){
+        //     tela_showed = tela;
+        //     if(tela_showed==0){
+        //         display_screen(tela0, 7, ssd);
+        //     }
+        //     if(tela_showed==1){
+        //         display_screen(tela1, 7, ssd);
+        //     }
+        //     if(tela_showed==2){
+        //         display_screen(tela2, 7, ssd);
+        //     }
+        //     sleep_ms(500);
+        // }
+
+        // // Vê se o botão do Joystick foi pressionado
+        // button_js_pressed = !gpio_get(JOYSTICK_BUTTON);
+        
+        // // Se o botão do Joystick está pressionado, entra na funcionalidade da tela mostrada
+        // if(button_js_pressed){
             
-            // Tela do treinamento de ouvido
-            if(tela == 0){
+        //     // Tela do treinamento de ouvido
+        //     if(tela == 0){
 
-                // Configura os buzzers
-                setup_buzzers();
+        //         // Configura os buzzers
+        //         setup_buzzers();
 
-                // Inicia o gerador de números aleatórios e passa o tempo atual como a semente de geração
-                srand(get_absolute_time());
+        //         // Inicia o gerador de números aleatórios e passa o tempo atual como a semente de geração
+        //         srand(get_absolute_time());
 
-                // Loop de execução do treinamento de ouvido
-                while (true){
+        //         // Loop de execução do treinamento de ouvido
+        //         while (true){
                     
-                    // Para o caso de apenas 1 BitDogLab
-                    if(num_BitDogLabs == 1){
+        //             // Para o caso de apenas 1 BitDogLab
+        //             if(num_BitDogLabs == 1){
                         
-                        // Escolhe duas notas aleatórias
-                        int idx1 = rand() % NUM_NOTES;
-                        int idx2;
-                        do {
-                            idx2 = rand() % NUM_NOTES;
-                        } while (idx2 == idx1);
+        //                 // Escolhe duas notas aleatórias
+        //                 int idx1 = rand() % NUM_NOTES;
+        //                 int idx2;
+        //                 do {
+        //                     idx2 = rand() % NUM_NOTES;
+        //                 } while (idx2 == idx1);
 
-                        // Obtém os valores de frequência e os nomes das notas escolhidas
-                        float freq1 = notes[idx1].value;
-                        float freq2 = notes[idx2].value;
-                        const char *note1 = notes[idx1].name;
-                        const char *note2 = notes[idx2].name;
+        //                 // Obtém os valores de frequência e os nomes das notas escolhidas
+        //                 float freq1 = notes[idx1].value;
+        //                 float freq2 = notes[idx2].value;
+        //                 const char *note1 = notes[idx1].name;
+        //                 const char *note2 = notes[idx2].name;
 
-                        // Escolhe a nota que o usuário deverá acertar
-                        int correctBuzzer = rand() % 2;
+        //                 // Escolhe a nota que o usuário deverá acertar
+        //                 int correctBuzzer = rand() % 2;
 
-                        // Mostra no terminal o botão correto (para debugar)
-                        if (correctBuzzer == 0) {
-                            printf("Botao correto: A\n");
-                        } else {
-                            printf("Botao correto: B\n");
-                        }
+        //                 // Mostra no terminal o botão correto (para debugar)
+        //                 if (correctBuzzer == 0) {
+        //                     printf("Botao correto: A\n");
+        //                 } else {
+        //                     printf("Botao correto: B\n");
+        //                 }
 
-                        float displayedFreq;
-                        const char *displayedNote;
-                        if (correctBuzzer == 0) {
-                            displayedFreq = freq2;
-                            displayedNote = note2;
-                        } else {
-                            displayedFreq = freq1;
-                            displayedNote = note1;
-                        }
+        //                 float displayedFreq;
+        //                 const char *displayedNote;
+        //                 if (correctBuzzer == 0) {
+        //                     displayedFreq = freq2;
+        //                     displayedNote = note2;
+        //                 } else {
+        //                     displayedFreq = freq1;
+        //                     displayedNote = note1;
+        //                 }
 
-                        // Exibe as informações no display OLED
-                        update_texts_training(displayedFreq, displayedNote);
-                        display_texts(ssd);
-                        sleep_ms(500);
+        //                 // Exibe as informações no display OLED
+        //                 update_texts_training(displayedFreq, displayedNote);
+        //                 display_texts(ssd);
+        //                 sleep_ms(500);
 
-                        // Chama atenção para a exibição dos sons
-                        print_draw_temp(8);
+        //                 // Chama atenção para a exibição dos sons
+        //                 print_draw_temp(8);
 
-                        // Busca os valores de wrap associados as notas
-                        int wrap1 = 0, wrap2 = 0;
-                        int num_wraps = sizeof(note_wraps) / sizeof(note_wraps[0]);
-                        for (int j = 0; j < num_wraps; j++) {
-                            if (strcmp(note_wraps[j].name, note1) == 0) {
-                                wrap1 = note_wraps[j].value;
-                            }
-                            if (strcmp(note_wraps[j].name, note2) == 0) {
-                                wrap2 = note_wraps[j].value;
-                            }
-                        }
+        //                 // Busca os valores de wrap associados as notas
+        //                 int wrap1 = 0, wrap2 = 0;
+        //                 int num_wraps = sizeof(note_wraps) / sizeof(note_wraps[0]);
+        //                 for (int j = 0; j < num_wraps; j++) {
+        //                     if (strcmp(note_wraps[j].name, note1) == 0) {
+        //                         wrap1 = note_wraps[j].value;
+        //                     }
+        //                     if (strcmp(note_wraps[j].name, note2) == 0) {
+        //                         wrap2 = note_wraps[j].value;
+        //                     }
+        //                 }
 
-                        // Toca a primeira nota no Buzzer A
-                        print_draw_fix(0);
-                        play_note(BUZZER_A, wrap2);
-                        sleep_ms(2000);
-                        play_rest(BUZZER_A);
+        //                 // Toca a primeira nota no Buzzer A
+        //                 print_draw_fix(0);
+        //                 play_note(BUZZER_A, wrap2);
+        //                 sleep_ms(2000);
+        //                 play_rest(BUZZER_A);
                         
-                        // Toca a segunda nota no Buzzer B
-                        print_draw_fix(1);
-                        play_note(BUZZER_B, wrap1);
-                        sleep_ms(2000);
-                        play_rest(BUZZER_B);
+        //                 // Toca a segunda nota no Buzzer B
+        //                 print_draw_fix(1);
+        //                 play_note(BUZZER_B, wrap1);
+        //                 sleep_ms(2000);
+        //                 play_rest(BUZZER_B);
 
-                        // Limpa a matriz de LEDs
-                        npClear();
-                        npWrite();
+        //                 // Limpa a matriz de LEDs
+        //                 npClear();
+        //                 npWrite();
 
-                        // Armazena o palpite do usuário
-                        int userGuess = get_user_guess();
+        //                 // Armazena o palpite do usuário
+        //                 int userGuess = get_user_guess();
 
-                        // Processa o palpite do usuário, indicando se ele acertou ou não
-                        evaluate_response(correctBuzzer, userGuess, ssd);
+        //                 // Processa o palpite do usuário, indicando se ele acertou ou não
+        //                 evaluate_response(correctBuzzer, userGuess, ssd);
 
-                        test_uart_connection_device1();
+        //                 test_uart_connection_device1();
 
-                        if(connection_status){
-                            num_BitDogLabs = 2;
-                        }
+        //                 if(connection_status){
+        //                     num_BitDogLabs = 2;
+        //                 }
 
-                    }
+        //             }
 
-                    if(num_BitDogLabs == 2){
-                        uart_putc(uart0, 's');
+        //             if(num_BitDogLabs == 2){
+        //                 uart_putc(uart0, 's');
 
-                        sleep_ms(100);
+        //                 sleep_ms(100);
 
-                        if (uart_is_readable(uart0)) {
-                            // Lê um caractere da UART
-                            char signal = uart_getc(uart0);
+        //                 if (uart_is_readable(uart0)) {
+        //                     // Lê um caractere da UART
+        //                     char signal = uart_getc(uart0);
 
-                            printf("Recebido: %c\n", signal);
-                        }
-                    }
+        //                     printf("Recebido: %c\n", signal);
+        //                 }
+        //             }
 
 
-                    // Volta ao menu inicial se solicitado (quando o botão do Joystick é pressionado)
-                    button_js_pressed = !gpio_get(JOYSTICK_BUTTON);
-                    if(button_js_pressed){
-                        tela = 1;
-                        tela_showed = 1;
-                        display_screen(tela1, 7, ssd);
-                        break;
-                    }
-                }
-            }
+        //             // Volta ao menu inicial se solicitado (quando o botão do Joystick é pressionado)
+        //             button_js_pressed = !gpio_get(JOYSTICK_BUTTON);
+        //             if(button_js_pressed){
+        //                 tela = 1;
+        //                 tela_showed = 1;
+        //                 display_screen(tela1, 7, ssd);
+        //                 break;
+        //             }
+        //         }
+        //     }
 
-            // Tela do afinador
-            if(tela == 2){
+        //     // Tela do afinador
+        //     if(tela == 2){
 
-                // Configura o conversor ADC para o microfone
-                setup_adc_mic();
+        //         // Configura o conversor ADC para o microfone
+        //         setup_adc_mic();
 
-                // Loop de execução do afinador
-                while (true)
-                {
-                    // Realiza a coleta de amostras
-                    sample_mic();
+        //         // Loop de execução do afinador
+        //         while (true)
+        //         {
+        //             // Realiza a coleta de amostras
+        //             sample_mic();
 
-                    // Calcula a frequência dominante utilizando FFT
-                    frequency = get_dominant_freq();
+        //             // Calcula a frequência dominante utilizando FFT
+        //             frequency = get_dominant_freq();
 
-                    // Encontra a nota mais próxima da frequência desejada
-                    find_closest_note(frequency, &note, &diff);
+        //             // Encontra a nota mais próxima da frequência desejada
+        //             find_closest_note(frequency, &note, &diff);
 
-                    // Atualiza o texto com os valores obtidos
-                    update_texts_tuner(frequency, note, diff);
+        //             // Atualiza o texto com os valores obtidos
+        //             update_texts_tuner(frequency, note, diff);
 
-                    // Exibe o texto no display
-                    display_texts(ssd);
+        //             // Exibe o texto no display
+        //             display_texts(ssd);
 
-                    // Espera meio segundo para realizar a próxima amostra
-                    sleep_ms(200);
+        //             // Espera meio segundo para realizar a próxima amostra
+        //             sleep_ms(200);
                     
-                    // Volta ao menu inicial se solicitado (quando o botão do Joystick é pressionado)
-                    button_js_pressed = !gpio_get(JOYSTICK_BUTTON);
-                    if(button_js_pressed){
-                        setup_adc_joystick();
-                        tela = 1;
-                        tela_showed = 1;
-                        display_screen(tela1, 7, ssd);
-                        break;
-                    }
-                }
-            }
+        //             // Volta ao menu inicial se solicitado (quando o botão do Joystick é pressionado)
+        //             button_js_pressed = !gpio_get(JOYSTICK_BUTTON);
+        //             if(button_js_pressed){
+        //                 setup_adc_joystick();
+        //                 tela = 1;
+        //                 tela_showed = 1;
+        //                 display_screen(tela1, 7, ssd);
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
         }
     }
 }
