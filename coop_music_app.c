@@ -937,6 +937,9 @@ void test_uart_connection_device1() {
  *   Após 3 testes, connection_status é definida como true se todos tiverem sucesso.
  */
 void test_uart_connection_device2() {
+    gpio_put(RED_PIN, 1);
+    gpio_put(GREEN_PIN, 1);
+
     int success_count = 0;
 
     for (int i = 0; i < 3; i++) {
@@ -944,17 +947,12 @@ void test_uart_connection_device2() {
 
         // Define o prazo para aguardar 200 ms (200000 microsegundos)
         absolute_time_t receive_deadline = delayed_by_us(get_absolute_time(), 200 * 1000);
-
-        gpio_put(GREEN_PIN, 0);
-        gpio_put(RED_PIN, 0);
         
         // Aguarda até que o tempo definido seja atingido ou até receber o caractere 's'
         while (!time_reached(receive_deadline)) {
             if (uart_is_readable(uart0)) {
                 char received = uart_getc(uart0);
                 if (received == 's') {
-                    gpio_put(GREEN_PIN, 1);
-                    gpio_put(RED_PIN, 1);
                     received_flag = true;
                     break;
                 }
@@ -980,13 +978,12 @@ void test_uart_connection_device2() {
     // Atualiza o status da conexão: true se todos os testes foram bem-sucedidos
     if(success_count == 3){
         connection_status = true;
-        gpio_put(GREEN_PIN, 1);
-        gpio_put(RED_PIN, 0);
     }else{
-        gpio_put(GREEN_PIN, 0);
-        gpio_put(RED_PIN, 0);
         connection_status = false;
     }
+
+    gpio_put(RED_PIN, 0);
+    gpio_put(GREEN_PIN, 0);
 }
 
 
@@ -1124,12 +1121,21 @@ int main() {
 
         do
         {
+            gpio_put(RED_PIN, 1);
             test_uart_connection_device2();
         } while (!connection_status);
-        
+        gpio_put(RED_PIN, 0);
+
         while (connection_status)
         {
-            //process_received_numbers();
+            gpio_put(GREEN_PIN, 1);
+            if (uart_is_readable(uart0)) {
+                // Lê um caractere da UART
+                char signal = uart_getc(uart0);
+                uart_putc(uart0, signal);
+                printf("Recebido: %c\n", signal);
+            }
+
             test_uart_connection_device2();
         }
         
