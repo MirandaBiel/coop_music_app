@@ -54,9 +54,9 @@ void uart_receive_string(uart_inst_t *uart, char *buffer, int max_len);
 int string_to_int(const char *str);
 
 // Variáveis globais para armazenar os números recebidos via UART
-int uart_wrap1_index = 0;
-int uart_wrap2_index = 0;
-int correct_buzzer_uart_index = 0;
+uint8_t uart_wrap1_index = 0;
+uint8_t uart_wrap2_index = 0;
+uint8_t correct_buzzer_uart_index = 0;
 
 // Estrutura de dados
 
@@ -1050,7 +1050,7 @@ int main() {
 
     // Loop de execução
     while (true) {
-        
+
         uart_wrap1_index = uart_wait_for_char;
         uart_wrap2_index = uart_wait_for_char;
         correct_buzzer_uart_index = uart_wait_for_char;
