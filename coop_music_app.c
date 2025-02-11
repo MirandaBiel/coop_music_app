@@ -52,7 +52,6 @@ char text[TEXT_LINES][TEXT_LENGTH];   // Variável de texto mostrada no display 
 void print_draw_temp(int direction);  // Declara o protótipo de print_draw_temp (para usar antes de escrevê-la)
 void uart_receive_string(uart_inst_t *uart, char *buffer, int max_len);
 int string_to_int(const char *str);
-bool connection_status = false;       // Variável para indicar o status da conexão UART
 
 // Variáveis globais para armazenar os números recebidos via UART
 int uart_wrap1 = 0;
@@ -884,107 +883,65 @@ void setup_uart(){
 
 /*
  * test_uart_connection_device1:
- *   Esta função é executada no Dispositivo 1.
- *   Ela realiza 3 trocas, a cada 600 ms, enviando o caractere 's'
- *   e esperando receber o mesmo caractere em resposta.
- *   Se as 3 trocas forem bem-sucedidas, connection_status é setada para true.
+ *   Envia o caractere 's' via UART e espera, por até 500 ms, receber o mesmo caractere de volta.
+ *   Se o caractere for recebido dentro do prazo, incrementa o contador success_count.
+ *   Após cada teste, aguarda 200 ms antes de repetir o processo.
  */
 void test_uart_connection_device1() {
+    // Acende os LEDs para indicar que o teste está em execução.
     gpio_put(RED_PIN, 1);
     gpio_put(GREEN_PIN, 1);
-    int success_count = 0;
 
-    for (int i = 0; i < 3; i++) {
-        // Envia o caractere 's' para o dispositivo 2
+    while (true) {
+        // Envia o caractere 's' via UART.
         uart_putc(uart0, 's');
-        
-        // Aguarda 200 ms para permitir a resposta
-        sleep_ms(200);
 
-        // Verifica se há dados disponíveis na UART
-        if (uart_is_readable(uart0)) {
-            char received = uart_getc(uart0);
-            // Se o caractere recebido for 's', conta como sucesso
-            if (received == 's') {
-                success_count++;
+        // Define o prazo para aguardar 500 ms (500000 microsegundos).
+        absolute_time_t deadline = delayed_by_us(get_absolute_time(), 500 * 1000);
+        bool received = false;
+
+        // Aguarda até que o prazo seja alcançado ou o caractere 's' seja recebido.
+        while (!time_reached(deadline)) {
+            if (uart_is_readable(uart0)) {
+                char received_char = uart_getc(uart0);
+                if (received_char == 's') {
+                    received = true;
+                    break;
+                }
             }
+            sleep_ms(1); // Pequena pausa para reduzir o uso da CPU.
         }
-        
-        // Aguarda mais 200 ms antes do próximo teste
-        sleep_ms(200);
+
     }
-    
-    // Atualiza o status da conexão: true se todos os testes foram bem-sucedidos
-    if(success_count == 3){
-        connection_status = true;
-    }else{
-        connection_status = false;
-    }
-    gpio_put(GREEN_PIN, 0);
-    gpio_put(RED_PIN, 0);
 }
 
 /*
  * test_uart_connection_device2:
- *   Esta função é executada no Dispositivo 2.
- *   Ela aguarda, por até 600 ms, o recebimento do caractere 's' do dispositivo 1.
- *   Se o caractere for recebido, responde enviando 's' e conta como um teste bem-sucedido.
- *   Após 3 testes, connection_status é definida como true se todos tiverem sucesso.
+ *   Fica aguardando indefinidamente a chegada de um caractere pela UART.
+ *   Quando o caractere recebido for 's', a função envia 's' de volta via UART
+ *   e, em seguida, retorna (sai da função).
  */
 void test_uart_connection_device2() {
     gpio_put(RED_PIN, 1);
     gpio_put(GREEN_PIN, 1);
 
-    int success_count = 0;
-
-    for (int i = 0; i < 3; i++) {
-        bool received_flag = false;
-
-        // Define o prazo para aguardar 3000 ms (3000000 microsegundos)
-        absolute_time_t receive_deadline = delayed_by_us(get_absolute_time(), 300 * 1000);
-        
-        // Aguarda até que o tempo definido seja atingido ou até receber o caractere 's'
-        while (!time_reached(receive_deadline)) {
-            if (uart_is_readable(uart0)) {
-                char received = uart_getc(uart0);
-                if (received == 's') {
-                    received_flag = true;
-                    break;
-                }
-                if (received == 'q') {
-                    connection_status = true;
-                    return;
-                }
+    while (true) {
+        // Verifica se há dados disponíveis na UART
+        if (uart_is_readable(uart0)) {
+            char received = uart_getc(uart0);
+            // Se o caractere recebido for 's'
+            if (received == 's') {
+                // Envia 's' de volta via UART
+                uart_putc(uart0, 's');
+                // Sai da função
+                gpio_put(RED_PIN, 0);
+                return;
             }
-            // Pequena pausa para reduzir o uso da CPU
-            sleep_ms(1);
         }
-
-        // Se o caractere 's' foi recebido, responde enviando 's' e conta como sucesso
-        if (received_flag) {
-            uart_putc(uart0, 's');
-            success_count++;
-        }
-
-        // Aguarda 200 ms antes de iniciar o próximo ciclo de teste
-        absolute_time_t next_cycle_deadline = delayed_by_us(get_absolute_time(), 200 * 1000);
-        while (!time_reached(next_cycle_deadline)) {
-            sleep_ms(1);
-        }
+        // Pausa de 1 ms para reduzir o uso da CPU durante a espera
+        sleep_ms(1);
     }
-
-    // Atualiza o status da conexão: true se os 3 testes foram bem-sucedidos
-    // Atualiza o status da conexão: true se todos os testes foram bem-sucedidos
-    if(success_count == 3){
-        connection_status = true;
-    }else{
-        connection_status = false;
-    }
-
-    gpio_put(RED_PIN, 0);
-    gpio_put(GREEN_PIN, 0);
 }
-
 
 void setup_rbg(){
 
@@ -1072,6 +1029,24 @@ char process_received_numbers() {
 
 }
 
+void update_texts_uart(int uart_wrap1, int uart_wrap2, int correct_buzzer_uart) {
+    char buffer[TEXT_LENGTH];
+    snprintf(buffer, TEXT_LENGTH, "wrap1: %d", uart_wrap1);
+    center_text(text[0], buffer, TEXT_LENGTH);
+
+    center_text(text[1], "", TEXT_LENGTH);
+    
+    snprintf(buffer, TEXT_LENGTH, "wrap2: %d", uart_wrap2);
+    center_text(text[2], buffer, TEXT_LENGTH);
+
+    center_text(text[3], "", TEXT_LENGTH);
+
+    snprintf(buffer, TEXT_LENGTH, "cb: %d", correct_buzzer_uart);
+    center_text(text[4], buffer, TEXT_LENGTH);
+
+    center_text(text[5], "", TEXT_LENGTH);
+}
+
 //                                             Função principal
 
 int main() {
@@ -1097,6 +1072,8 @@ int main() {
     uint8_t ssd[ssd1306_buffer_length];
     memset(ssd, 0, ssd1306_buffer_length);
     render_on_display(ssd, &frame_area);
+    update_texts_uart(uart_wrap1, uart_wrap2, correct_buzzer_uart);
+    display_texts(ssd);
 
     // Define a tela mostrada e a tela desejada
     //int tela = 1;
@@ -1115,29 +1092,15 @@ int main() {
 
     setup_rbg();
 
+    test_uart_connection_device2();
+
     // Loop de execução
     while (true) {
 
-        do
-        {
-            gpio_put(RED_PIN, 1);
-            test_uart_connection_device2();
-        } while (!connection_status);
-        gpio_put(RED_PIN, 0);
+        process_received_numbers();
 
-        while (connection_status)
-        {
-            gpio_put(GREEN_PIN, 1);
-            if (uart_is_readable(uart0)) {
-                // Lê um caractere da UART
-                char signal = uart_getc(uart0);
-                uart_putc(uart0, signal);
-                printf("Recebido: %c\n", signal);
-            }
-
-            test_uart_connection_device2();
-        }
-        
+        update_texts_uart(uart_wrap1, uart_wrap2, correct_buzzer_uart);
+        display_texts(ssd);
 
         if(false){
         // // Ler a posição do Joystick
