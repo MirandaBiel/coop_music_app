@@ -50,8 +50,7 @@ float diff;                           // Diferença entre a nota musical mais pr
 float frequency;                      // Frequência predominante
 char text[TEXT_LINES][TEXT_LENGTH];   // Variável de texto mostrada no display OLED
 void print_draw_temp(int direction);  // Declara o protótipo de print_draw_temp (para usar antes de escrevê-la)
-void uart_receive_string(uart_inst_t *uart, char *buffer, int max_len);
-int string_to_int(const char *str);
+
 
 // Variáveis globais para armazenar os números recebidos via UART
 uint8_t uart_wrap1_index = 0;
@@ -341,42 +340,6 @@ int get_user_guess() {
             sleep_ms(300); // Delay para debounce
         }
     }
-    return guess;
-}
-
-/*
- * get_user_guess_uart:
- *   Aguarda até que o usuário forneça um palpite através dos botões (A/B) ou pela UART.
- *   Se o botão A for pressionado, retorna 0; se o botão B, retorna 1.
- *   Se um número for recebido pela UART, converte-o e o retorna.
- */
-int get_user_guess_uart() {
-    int guess = -1;
-    char buffer[16] = {0};  // Buffer para armazenar a string recebida via UART
-
-    while (guess == -1) {
-        // Verifica se o botão A foi pressionado (assumindo lógica ativa em nível baixo)
-        if (!gpio_get(A_BUTTON)) {
-            guess = 0;
-            sleep_ms(300);  // Delay para debounce
-        }
-        // Verifica se o botão B foi pressionado
-        else if (!gpio_get(B_BUTTON)) {
-            guess = 1;
-            sleep_ms(300);  // Delay para debounce
-        }
-        // Verifica se há dados disponíveis na UART
-        else if (uart_is_readable(uart0)) {
-            // Lê uma string da UART
-            uart_receive_string(uart0, buffer, sizeof(buffer));
-            // Se algo foi recebido, converte a string para inteiro
-            if (buffer[0] != '\0') {
-                guess = string_to_int(buffer);
-            }
-        }
-        sleep_ms(10);  // Pequena pausa para reduzir o uso da CPU
-    }
-    
     return guess;
 }
 
@@ -1051,9 +1014,9 @@ int main() {
     // Loop de execução
     while (true) {
 
-        uart_wrap1_index = uart_wait_for_char;
-        uart_wrap2_index = uart_wait_for_char;
-        correct_buzzer_uart_index = uart_wait_for_char;
+        uart_wrap1_index = uart_wait_for_char(uart0);
+        uart_wrap2_index = uart_wait_for_char(uart0);
+        correct_buzzer_uart_index = uart_wait_for_char(uart0);
 
         update_texts_uart(uart_wrap1_index, uart_wrap2_index, correct_buzzer_uart_index);
         display_texts(ssd);
