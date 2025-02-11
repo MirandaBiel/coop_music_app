@@ -50,9 +50,6 @@ float diff;                           // Diferença entre a nota musical mais pr
 float frequency;                      // Frequência predominante
 char text[TEXT_LINES][TEXT_LENGTH];   // Variável de texto mostrada no display OLED
 void print_draw_temp(int direction);  // Declara o protótipo de print_draw_temp (para usar antes de escrevê-la)
-
-
-// Variáveis globais para armazenar os números recebidos via UART
 uint8_t uart_wrap1_index = 0;
 uint8_t uart_wrap2_index = 0;
 uint8_t correct_buzzer_uart_index = 0;
@@ -801,6 +798,24 @@ void update_texts_training(float frequency, const char *nota) {
     center_text(text[5], "", TEXT_LENGTH);
 }
 
+void update_texts_uart(int uart_wrap1, int uart_wrap2, int correct_buzzer_uart) {
+    char buffer[TEXT_LENGTH];
+    snprintf(buffer, TEXT_LENGTH, "wrap1: %d", uart_wrap1);
+    center_text(text[0], buffer, TEXT_LENGTH);
+
+    center_text(text[1], "", TEXT_LENGTH);
+    
+    snprintf(buffer, TEXT_LENGTH, "wrap2: %d", uart_wrap2);
+    center_text(text[2], buffer, TEXT_LENGTH);
+
+    center_text(text[3], "", TEXT_LENGTH);
+
+    snprintf(buffer, TEXT_LENGTH, "cb: %d", correct_buzzer_uart);
+    center_text(text[4], buffer, TEXT_LENGTH);
+
+    center_text(text[5], "", TEXT_LENGTH);
+}
+
 /*
  * display_texts:
  *   Exibe cada linha do buffer de texto no display OLED.
@@ -922,23 +937,6 @@ void setup_rbg(){
 
 }
 
-void update_texts_uart(int uart_wrap1, int uart_wrap2, int correct_buzzer_uart) {
-    char buffer[TEXT_LENGTH];
-    snprintf(buffer, TEXT_LENGTH, "wrap1: %d", uart_wrap1);
-    center_text(text[0], buffer, TEXT_LENGTH);
-
-    center_text(text[1], "", TEXT_LENGTH);
-    
-    snprintf(buffer, TEXT_LENGTH, "wrap2: %d", uart_wrap2);
-    center_text(text[2], buffer, TEXT_LENGTH);
-
-    center_text(text[3], "", TEXT_LENGTH);
-
-    snprintf(buffer, TEXT_LENGTH, "cb: %d", correct_buzzer_uart);
-    center_text(text[4], buffer, TEXT_LENGTH);
-
-    center_text(text[5], "", TEXT_LENGTH);
-}
 
 /*
  * uart_send_uint8_as_char:
