@@ -940,8 +940,8 @@ void test_uart_connection_device2() {
     for (int i = 0; i < 3; i++) {
         bool received_flag = false;
 
-        // Define o prazo para aguardar 2000 ms (2000000 microsegundos)
-        absolute_time_t receive_deadline = delayed_by_us(get_absolute_time(), 2000 * 1000);
+        // Define o prazo para aguardar 3000 ms (3000000 microsegundos)
+        absolute_time_t receive_deadline = delayed_by_us(get_absolute_time(), 300 * 1000);
         
         // Aguarda até que o tempo definido seja atingido ou até receber o caractere 's'
         while (!time_reached(receive_deadline)) {
@@ -950,6 +950,10 @@ void test_uart_connection_device2() {
                 if (received == 's') {
                     received_flag = true;
                     break;
+                }
+                if (received == 'q') {
+                    connection_status = true;
+                    return;
                 }
             }
             // Pequena pausa para reduzir o uso da CPU
@@ -960,6 +964,12 @@ void test_uart_connection_device2() {
         if (received_flag) {
             uart_putc(uart0, 's');
             success_count++;
+        }
+
+        // Aguarda 200 ms antes de iniciar o próximo ciclo de teste
+        absolute_time_t next_cycle_deadline = delayed_by_us(get_absolute_time(), 200 * 1000);
+        while (!time_reached(next_cycle_deadline)) {
+            sleep_ms(1);
         }
     }
 
