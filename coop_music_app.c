@@ -54,9 +54,9 @@ void uart_receive_string(uart_inst_t *uart, char *buffer, int max_len);
 int string_to_int(const char *str);
 
 // Variáveis globais para armazenar os números recebidos via UART
-int uart_wrap1 = 0;
-int uart_wrap2 = 0;
-int correct_buzzer_uart = 0;
+int uart_wrap1_index = 0;
+int uart_wrap2_index = 0;
+int correct_buzzer_uart_index = 0;
 
 // Estrutura de dados
 
@@ -959,76 +959,6 @@ void setup_rbg(){
 
 }
 
-/*
- * uart_send_string:
- *   Envia, caractere a caractere, a string fornecida pela UART.
- * Parâmetros:
- *   - uart: Instância da UART (por exemplo, uart0).
- *   - str: Ponteiro para a string a ser enviada.
- */
-void uart_send_string(uart_inst_t *uart, const char *str) {
-    while (*str) {
-        uart_putc(uart, *str++);
-    }
-}
-
-/*
- * uart_receive_string:
- *   Lê caracteres da UART até encontrar um caractere de nova linha ('\n' ou '\r')
- *   ou até que o buffer esteja quase cheio.
- * Parâmetros:
- *   - uart: Instância da UART (por exemplo, uart0).
- *   - buffer: Buffer onde os caracteres recebidos serão armazenados.
- *   - max_len: Tamanho máximo do buffer.
- */
-void uart_receive_string(uart_inst_t *uart, char *buffer, int max_len) {
-    int index = 0;
-    // Limita o número de caracteres a ser armazenado, reservando espaço para o '\0'
-    while (index < max_len - 1) {
-        if (uart_is_readable(uart)) {
-            char c = uart_getc(uart);
-            // Se encontrar fim de linha, interrompe a leitura
-            if (c == '\n' || c == '\r') {
-                break;
-            }
-            buffer[index++] = c;
-        }
-        sleep_ms(1);  // Pequena pausa para reduzir o uso da CPU
-    }
-    buffer[index] = '\0';  // Finaliza a string
-}
-
-/*
- * string_to_int:
- *   Converte uma string para um inteiro.
- * Parâmetros:
- *   - str: Ponteiro para a string contendo o número.
- * Retorna:
- *   O número convertido. (usa atoi da biblioteca padrão)
- */
-int string_to_int(const char *str) {
-    return atoi(str);
-}
-
-char process_received_numbers() {
-    char buffer[16];  // Buffer para armazenar cada string recebida
-    
-    // Recebe e converte a primeira string
-    uart_receive_string(uart0, buffer, sizeof(buffer));
-    uart_wrap1 = string_to_int(buffer);
-    
-    // Recebe e converte a segunda string
-    uart_receive_string(uart0, buffer, sizeof(buffer));
-    uart_wrap2 = string_to_int(buffer);
-    
-    // Recebe e converte a terceira string
-    uart_receive_string(uart0, buffer, sizeof(buffer));
-    correct_buzzer_uart = string_to_int(buffer);
-
-    printf("NUMEROS RECEBIDOS");
-
-}
-
 void update_texts_uart(int uart_wrap1, int uart_wrap2, int correct_buzzer_uart) {
     char buffer[TEXT_LENGTH];
     snprintf(buffer, TEXT_LENGTH, "wrap1: %d", uart_wrap1);
@@ -1045,6 +975,30 @@ void update_texts_uart(int uart_wrap1, int uart_wrap2, int correct_buzzer_uart) 
     center_text(text[4], buffer, TEXT_LENGTH);
 
     center_text(text[5], "", TEXT_LENGTH);
+}
+
+/*
+ * uart_send_uint8_as_char:
+ *   Envia um valor uint8_t (convertido para caractere) via UART.
+ *
+ * Parâmetros:
+ *   - uart: Instância da UART (por exemplo, uart0).
+ *   - value: Valor do tipo uint8_t a ser enviado.
+ */
+void uart_send_uint8_as_char(uart_inst_t *uart, uint8_t value) {
+    uart_putc(uart, (char)value);
+}
+
+/*
+ * uart_wait_for_char:
+ *   Fica monitorando a UART indefinidamente até que um caractere seja recebido.
+ *   Retorna o caractere recebido (do tipo uint8_t).
+ */
+uint8_t uart_wait_for_char(uart_inst_t *uart) {
+    while (!uart_is_readable(uart)) {
+        sleep_ms(1);  // Pequena pausa para reduzir o uso da CPU
+    }
+    return uart_getc(uart);
 }
 
 //                                             Função principal
@@ -1072,7 +1026,7 @@ int main() {
     uint8_t ssd[ssd1306_buffer_length];
     memset(ssd, 0, ssd1306_buffer_length);
     render_on_display(ssd, &frame_area);
-    update_texts_uart(uart_wrap1, uart_wrap2, correct_buzzer_uart);
+    update_texts_uart(uart_wrap1_index, uart_wrap2_index, correct_buzzer_uart_index);
     display_texts(ssd);
 
     // Define a tela mostrada e a tela desejada
@@ -1096,10 +1050,12 @@ int main() {
 
     // Loop de execução
     while (true) {
+        
+        uart_wrap1_index = uart_wait_for_char;
+        uart_wrap2_index = uart_wait_for_char;
+        correct_buzzer_uart_index = uart_wait_for_char;
 
-        process_received_numbers();
-
-        update_texts_uart(uart_wrap1, uart_wrap2, correct_buzzer_uart);
+        update_texts_uart(uart_wrap1_index, uart_wrap2_index, correct_buzzer_uart_index);
         display_texts(ssd);
 
         if(false){
