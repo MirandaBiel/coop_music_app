@@ -387,20 +387,22 @@ int get_user_guess_uart() {
         if (uart_is_readable(uart0)) {
             char received = uart_getc(uart0);
             if (received == 'a') {
-                return 2;
+                return 0;
             } else if (received == 'b') {
-                return 3;
+                return 1;
             }
         }
 
         // Verifica se o botão A foi pressionado (botão ativo em nível baixo)
         if (!gpio_get(A_BUTTON)) {
-            guess = 0;
+            guess = 2;
+            uart_send_uint8_as_char(uart0, 'a');
             //sleep_ms(300); // Delay para debounce
         }
         // Verifica se o botão B foi pressionado
         else if (!gpio_get(B_BUTTON)) {
-            guess = 1;
+            guess = 3;
+            uart_send_uint8_as_char(uart0, 'b');
             //sleep_ms(300); // Delay para debounce
         }
     }
