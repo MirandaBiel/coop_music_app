@@ -996,13 +996,13 @@ int main() {
 
         // Toca a primeira nota no Buzzer A
         print_draw_fix(0);
-        play_note(BUZZER_A, wrap3);
+        play_note(BUZZER_A, wrap4);
         sleep_ms(2000);
         play_rest(BUZZER_A);
         
         // Toca a segunda nota no Buzzer B
         print_draw_fix(1);
-        play_note(BUZZER_B, wrap4);
+        play_note(BUZZER_B, wrap3);
         sleep_ms(2000);
         play_rest(BUZZER_B);
 
