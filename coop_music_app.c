@@ -700,15 +700,15 @@ void update_texts_training(float frequency, const char *nota) {
     center_text(text[1], "DA NOTA", TEXT_LENGTH);
 
     center_text(text[2], "", TEXT_LENGTH);
-    
+
     char buffer[TEXT_LENGTH];
-    snprintf(buffer, TEXT_LENGTH, "Freq: %.0f HZ", frequency);
+    snprintf(buffer, TEXT_LENGTH, "Nota: %s", nota);
     center_text(text[3], buffer, TEXT_LENGTH);
 
-    snprintf(buffer, TEXT_LENGTH, "Nota: %s", nota);
-    center_text(text[4], buffer, TEXT_LENGTH);
+    center_text(text[4], "", TEXT_LENGTH);
 
-    center_text(text[5], "", TEXT_LENGTH);
+    snprintf(buffer, TEXT_LENGTH, "Freq: %.0f HZ", frequency);
+    center_text(text[5], buffer, TEXT_LENGTH);
 }
 
 void update_texts_uart(int uart_wrap1, int uart_wrap2, int correct_buzzer_uart) {
@@ -734,6 +734,10 @@ void update_texts_uart(int uart_wrap1, int uart_wrap2, int correct_buzzer_uart) 
  *   Exibe cada linha do buffer de texto no display OLED.
  */
 void display_texts(uint8_t *ssd) {
+    
+    memset(ssd, 0, ssd1306_buffer_length);
+    render_on_display(ssd, &frame_area);
+    
     int y = 0;
     for (uint i = 0; i < TEXT_LINES; i++) {
         ssd1306_draw_string(ssd, 5, y, text[i]);  // Desenha a string no display
@@ -751,6 +755,10 @@ void display_texts(uint8_t *ssd) {
  *     - ssd: buffer do display OLED.
  */
 void display_screen(const char screen[][TEXT_LENGTH + 1], unsigned int num_lines, uint8_t *ssd) {
+    
+    memset(ssd, 0, ssd1306_buffer_length);
+    render_on_display(ssd, &frame_area);
+
     char line[TEXT_LENGTH + 1];
     int y = 0;
     for (unsigned int i = 0; i < num_lines; i++) {
@@ -760,6 +768,7 @@ void display_screen(const char screen[][TEXT_LENGTH + 1], unsigned int num_lines
     }
     render_on_display(ssd, &frame_area);
 }
+
 
 //                                             Funções relacionadas à comunicação UART
 
