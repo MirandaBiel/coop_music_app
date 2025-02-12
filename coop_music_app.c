@@ -50,8 +50,10 @@ float diff;                           // Diferença entre a nota musical mais pr
 float frequency;                      // Frequência predominante
 char text[TEXT_LINES][TEXT_LENGTH];   // Variável de texto mostrada no display OLED
 void print_draw_temp(int direction);  // Declara o protótipo de print_draw_temp (para usar antes de escrevê-la)
-uint8_t uart_wrap1_index = 0;
-uint8_t uart_wrap2_index = 0;
+uint8_t idx1 = 0;
+uint8_t idx2 = 0;
+uint8_t idx3 = 0;
+uint8_t idx4 = 0;
 uint8_t correct_buzzer_uart_index = 0;
 
 // Estrutura de dados
@@ -987,7 +989,7 @@ int main() {
     uint8_t ssd[ssd1306_buffer_length];
     memset(ssd, 0, ssd1306_buffer_length);
     render_on_display(ssd, &frame_area);
-    update_texts_uart(uart_wrap1_index, uart_wrap2_index, correct_buzzer_uart_index);
+    update_texts_uart(idx1, idx2, correct_buzzer_uart_index);
     display_texts(ssd);
 
     // Define a tela mostrada e a tela desejada
@@ -1007,17 +1009,97 @@ int main() {
 
     setup_rbg();
 
+    setup_buzzers();
+
     test_uart_connection_device2();
+
 
     // Loop de execução
     while (true) {
 
-        uart_wrap1_index = uart_wait_for_char(uart0);
-        uart_wrap2_index = uart_wait_for_char(uart0);
-        correct_buzzer_uart_index = uart_wait_for_char(uart0);
+        uint8_t idx1 = uart_wait_for_char(uart0);
+        uint8_t idx2 = uart_wait_for_char(uart0);
+        uint8_t idx3 = uart_wait_for_char(uart0);
+        uint8_t idx4 = uart_wait_for_char(uart0);
+        uint8_t correct_buzzer_uart_index = uart_wait_for_char(uart0);
 
-        update_texts_uart(uart_wrap1_index, uart_wrap2_index, correct_buzzer_uart_index);
+        // Obtém os valores de frequência e os nomes das notas escolhidas
+        float freq1 = notes[idx1].value;
+        float freq2 = notes[idx2].value;
+        float freq3 = notes[idx3].value;
+        float freq4 = notes[idx4].value;
+        const char *note1 = notes[idx1].name;
+        const char *note2 = notes[idx2].name;
+        const char *note3 = notes[idx3].name;
+        const char *note4 = notes[idx4].name;
+
+        float displayedFreq;
+        const char *displayedNote;
+        switch (correct_buzzer_uart_index)
+        {
+        case 0:
+            displayedFreq = freq2;
+            displayedNote = note2;
+            break;
+        case 1:
+            displayedFreq = freq1;
+            displayedNote = note1;
+            break;
+        case 2:
+            displayedFreq = freq4;
+            displayedNote = note4;
+            break;
+        case 3:
+            displayedFreq = freq3;
+            displayedNote = note3;
+            break;
+        default:
+            break;
+        }
+        
+        // Busca os valores de wrap associados as notas
+        int wrap3 = 0, wrap4 = 0;
+        int num_wraps = sizeof(note_wraps) / sizeof(note_wraps[0]);
+        for (int j = 0; j < num_wraps; j++) {
+            if (strcmp(note_wraps[j].name, note3) == 0) {
+                wrap3 = note_wraps[j].value;
+            }
+            if (strcmp(note_wraps[j].name, note4) == 0) {
+                wrap4 = note_wraps[j].value;
+            }
+        }
+
+        uart_wait_for_char(uart0);
+
+        // Exibe as informações no display OLED
+        update_texts_training(displayedFreq, displayedNote);
         display_texts(ssd);
+        sleep_ms(500);
+
+        // Chama atenção para a exibição dos sons
+        print_draw_temp(4);
+
+        sleep_ms(3000);
+
+        uart_wait_for_char(uart0);
+
+        // Toca a primeira nota no Buzzer A
+        print_draw_fix(0);
+        play_note(BUZZER_A, wrap3);
+        sleep_ms(2000);
+        play_rest(BUZZER_A);
+        
+        // Toca a segunda nota no Buzzer B
+        print_draw_fix(1);
+        play_note(BUZZER_B, wrap4);
+        sleep_ms(2000);
+        play_rest(BUZZER_B);
+
+        // Limpa a matriz de LEDs
+        npClear();
+        npWrite();
+
+        uart_send_uint8_as_char(uart0, 's');
 
         if(false){
         // // Ler a posição do Joystick
