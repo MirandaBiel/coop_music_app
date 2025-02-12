@@ -32,11 +32,12 @@
 #define JOYSTICK_BUTTON 22                       // Define o pino do botão do joystick.
 #define A_BUTTON 5                               // Define o pino do botão A.
 #define B_BUTTON 6                               // Define o pino do botão B.
-#define UART_TX 0
-#define UART_RX 1
-#define RED_PIN 13
-#define GREEN_PIN 11
-#define BLUE_PIN 12
+#define UART_TX 0                                // Define o pino de transmissão (TX) da UART.
+#define UART_RX 1                                // Define o pino de recepção (RX) da UART.
+#define RED_PIN 13                               // Define o pino do LED vermelho.
+#define GREEN_PIN 11                             // Define o pino do LED verde.
+#define BLUE_PIN 12                              // Define o pino do LED azul.
+
 
 // Variáveis globais
 const float DIVISOR_CLK_PWM = 16.0;   // Divisor de clock para o PWM
@@ -50,11 +51,11 @@ float diff;                           // Diferença entre a nota musical mais pr
 float frequency;                      // Frequência predominante
 char text[TEXT_LINES][TEXT_LENGTH];   // Variável de texto mostrada no display OLED
 void print_draw_temp(int direction);  // Declara o protótipo de print_draw_temp (para usar antes de escrevê-la)
-uint8_t idx1 = 0;
-uint8_t idx2 = 0;
-uint8_t idx3 = 0;
-uint8_t idx4 = 0;
-uint8_t correct_buzzer_uart_index = 0;
+uint8_t idx1 = 0;                     // índice da nota 1 recebida por UART
+uint8_t idx2 = 0;                     // índice da nota 2 recebida por UART
+uint8_t idx3 = 0;                     // índice da nota 3 recebida por UART
+uint8_t idx4 = 0;                     // índice da nota 4 recebida por UART
+uint8_t correct_buzzer_uart_index = 0;// índice da nota correta recebida por UART
 
 // Estrutura de dados
 
@@ -379,35 +380,44 @@ void evaluate_response(int correctBuzzer, int userGuess, uint8_t *ssd) {
     }
 }
 
+/*
+ * get_user_guess_uart:
+ *   Monitora continuamente a UART e os botões físicos (A e B).
+ *   Retorna um valor quando recebe uma entrada válida:
+ *     - Retorna 0 se a UART receber o caractere 'a'.
+ *     - Retorna 1 se a UART receber o caractere 'b'.
+ *     - Retorna 2 se o botão A for pressionado (e envia 'a' pela UART).
+ *     - Retorna 3 se o botão B for pressionado (e envia 'b' pela UART).
+ */
 int get_user_guess_uart() {
     int guess = -1;
     
     while (guess == -1) {
         // Verifica se há dados disponíveis na UART
         if (uart_is_readable(uart0)) {
-            char received = uart_getc(uart0);
+            char received = uart_getc(uart0); // Lê um caractere da UART
             if (received == 'a') {
-                return 0;
+                return 0; // Se recebeu 'a', retorna 0
             } else if (received == 'b') {
-                return 1;
+                return 1; // Se recebeu 'b', retorna 1
             }
         }
 
         // Verifica se o botão A foi pressionado (botão ativo em nível baixo)
         if (!gpio_get(A_BUTTON)) {
-            guess = 2;
-            uart_putc(uart0, 'a');
-            //sleep_ms(300); // Delay para debounce
+            guess = 2; // Define o palpite como 2 se o botão A foi pressionado
+            uart_putc(uart0, 'a'); // Envia 'a' pela UART para sinalizar o evento
+            //sleep_ms(300); // Opcional: delay para debounce do botão
         }
         // Verifica se o botão B foi pressionado
         else if (!gpio_get(B_BUTTON)) {
-            guess = 3;
-            uart_putc(uart0, 'b');
-            //sleep_ms(300); // Delay para debounce
+            guess = 3; // Define o palpite como 3 se o botão B foi pressionado
+            uart_putc(uart0, 'b'); // Envia 'b' pela UART para sinalizar o evento
+            //sleep_ms(300); // Opcional: delay para debounce do botão
         }
     }
 
-    return guess;
+    return guess; // Retorna o valor correspondente ao evento capturado
 }
 
 
@@ -742,21 +752,37 @@ void update_texts_training(float frequency, const char *nota) {
     center_text(text[5], buffer, TEXT_LENGTH);
 }
 
+/*
+ * update_texts_uart:
+ *   Atualiza o conteúdo das linhas de texto exibidas no display OLED, formatando valores recebidos via UART.
+ *   O intuito dessa função é debugar o código utilizando o display OLED
+ *   Parâmetros:
+ *     - uart_wrap1: Valor do primeiro wrap recebido pela UART.
+ *     - uart_wrap2: Valor do segundo wrap recebido pela UART.
+ *     - correct_buzzer_uart: Índice do buzzer correto recebido pela UART.
+ */
 void update_texts_uart(int uart_wrap1, int uart_wrap2, int correct_buzzer_uart) {
-    char buffer[TEXT_LENGTH];
+    char buffer[TEXT_LENGTH]; // Buffer temporário para formatar as strings
+
+    // Formata e exibe o primeiro wrap recebido pela UART
     snprintf(buffer, TEXT_LENGTH, "wrap1: %d", uart_wrap1);
     center_text(text[0], buffer, TEXT_LENGTH);
 
+    // Linha vazia para melhor espaçamento visual no display
     center_text(text[1], "", TEXT_LENGTH);
     
+    // Formata e exibe o segundo wrap recebido pela UART
     snprintf(buffer, TEXT_LENGTH, "wrap2: %d", uart_wrap2);
     center_text(text[2], buffer, TEXT_LENGTH);
 
+    // Outra linha vazia para espaçamento
     center_text(text[3], "", TEXT_LENGTH);
 
+    // Formata e exibe o índice do buzzer correto
     snprintf(buffer, TEXT_LENGTH, "cb: %d", correct_buzzer_uart);
     center_text(text[4], buffer, TEXT_LENGTH);
 
+    // Última linha vazia para manter o alinhamento do display
     center_text(text[5], "", TEXT_LENGTH);
 }
 
@@ -803,6 +829,11 @@ void display_screen(const char screen[][TEXT_LENGTH + 1], unsigned int num_lines
 
 //                                             Funções relacionadas à comunicação UART
 
+/*
+ * setup_uart:
+ *   Inicializa a comunicação UART0 com um baud rate de 115200.
+ *   Configura os pinos TX e RX e habilita o FIFO para melhorar a eficiência da transmissão.
+ */
 void setup_uart(){
     uart_init(uart0, 115200); // Inicializa a UART0 com baud rate de 115200
     gpio_set_function(UART_TX, GPIO_FUNC_UART); // Configura pino 0 como TX
@@ -874,22 +905,27 @@ void test_uart_connection_device2() {
     }
 }
 
-void setup_rbg(){
-
+/*
+ * setup_rbg:
+ *   Inicializa os pinos dos LED RGB e os configura como saída.
+ *   Define o estado inicial do LED como desligado (0).
+ */
+void setup_rbg() {
+    // Inicializa os pinos dos LEDs RGB
     gpio_init(RED_PIN);
     gpio_init(GREEN_PIN);
     gpio_init(BLUE_PIN);
 
+    // Configura os pinos como saída para controlar os LEDs
     gpio_set_dir(RED_PIN, GPIO_OUT);
     gpio_set_dir(GREEN_PIN, GPIO_OUT);
     gpio_set_dir(BLUE_PIN, GPIO_OUT);
 
-    gpio_put(RED_PIN, 0);   // Configura o estado do LED vermelho
-    gpio_put(GREEN_PIN, 0); // Configura o estado do LED verde
-    gpio_put(BLUE_PIN, 0);  // Configura o estado do LED azul
-
+    // Garante que os LEDs iniciem desligados
+    gpio_put(RED_PIN, 0);   // LED vermelho desligado
+    gpio_put(GREEN_PIN, 0); // LED verde desligado
+    gpio_put(BLUE_PIN, 0);  // LED azul desligado
 }
-
 
 /*
  * uart_send_uint8_as_char:
@@ -925,13 +961,6 @@ int main() {
     // Inicialização da matriz de LEDs
     npInit(LED_PIN, LED_COUNT);
 
-    // Inicialização do Joystick
-    //setup_adc_joystick();
-
-    // Define variáveis para a leitura da posição do Joystick no eixo x
-    //uint adc_x_raw;
-    //uint bar_x_pos;
-
     // Inicialização do display OLED
     setup_oled();
     calculate_render_area_buffer_length(&frame_area);
@@ -943,32 +972,31 @@ int main() {
     update_texts_uart(idx1, idx2, correct_buzzer_uart_index);
     display_texts(ssd);
 
-    // Define a tela mostrada e a tela desejada
-    //int tela = 1;
-    //int tela_showed = 1;
-
-    // Mostra a tela inicial
-    //display_screen(tela1, 7, ssd);
-
     // Inicialização dos Botões
     setup_buttons();
     bool button_a_pressed;
     bool button_b_pressed;
     bool button_js_pressed;
 
+    // Inicializa a interface de comunicação UART
     setup_uart();
 
+    // Inicializa o LED RGB que irá indicar os status de conexão entre as BitDogLabs
     setup_rbg();
 
+    // Configura os buzzers
     setup_buzzers();
 
+    // Testa se há um dispositivo conectado
     test_uart_connection_device2();
 
+    // Variável de controle para saber se a conexão entre as BitDogLabs será mantida ou não
     uint8_t repeat;
 
     // Loop de execução
     while (true) {
 
+        // Recebe do primeiro dispositivo os índices correspondentes às notas e o número do buzzer com a nota correta
         uint8_t idx1 = uart_wait_for_char(uart0);
         uint8_t idx2 = uart_wait_for_char(uart0);
         uint8_t idx3 = uart_wait_for_char(uart0);
@@ -985,6 +1013,7 @@ int main() {
         const char *note3 = notes[idx3].name;
         const char *note4 = notes[idx4].name;
 
+        // Determina qual o valor de frequência e a nota deverão ser mostradas no display com base em correctBuzzer
         float displayedFreq;
         const char *displayedNote;
         switch (correct_buzzer_uart_index)
@@ -1021,6 +1050,7 @@ int main() {
             }
         }
 
+        // Aguarda um sinal de sincronização do primeiro dispositivo
         uart_wait_for_char(uart0);
 
         // Exibe as informações no display OLED
@@ -1031,8 +1061,10 @@ int main() {
         // Chama atenção para a exibição dos sons
         print_draw_temp(4);
 
+        // Aguarda o primeiro dispositivo tocar os buzzers
         sleep_ms(3000);
 
+        // Aguarda um sinal de sincronização do primeiro dispositivo
         uart_wait_for_char(uart0);
 
         // Toca a primeira nota no Buzzer A
@@ -1051,13 +1083,17 @@ int main() {
         npClear();
         npWrite();
 
+        // Manda um caractere para a sincronização entre os 2 dispositivos
         uart_send_uint8_as_char(uart0, 's');
 
+        // Obtém o palpite do usuário sobre qual buzzer tocou a nota certa
         int userGuess = get_user_guess_uart();
 
+        // Apaga o conteúdo mostrado no display OLED
         memset(ssd, 0, ssd1306_buffer_length);
         render_on_display(ssd, &frame_area);
 
+        // Analisa e mostra se o usuário acertou ou não por meio do display OLED e da matriz de LEDs
         switch (correct_buzzer_uart_index)
         {
         case 0:
@@ -1106,6 +1142,7 @@ int main() {
             break;
         }
 
+        // Obtém um sinal do primeiro dispositivo que determina a continuidade da conexão UART
         repeat = uart_wait_for_char(uart0);
         if(!repeat){
             test_uart_connection_device2();
