@@ -1054,6 +1054,57 @@ int main() {
 
         int userGuess = get_user_guess_uart();
 
+        memset(ssd, 0, ssd1306_buffer_length);
+        render_on_display(ssd, &frame_area);
+
+        switch (correct_buzzer_uart_index)
+        {
+        case 0:
+            sleep_ms(2000);
+            uart_wait_for_char(uart0);
+            break;
+        case 1:
+            sleep_ms(2000);
+            uart_wait_for_char(uart0);
+            break;
+        case 2:
+            if(userGuess == 2){
+                ssd1306_draw_string(ssd, 5, 0, "Acertou");
+                render_on_display(ssd, &frame_area);
+                print_draw_temp(2);
+                print_draw_temp(2);
+                print_draw_temp(2);
+                uart_send_uint8_as_char(uart0, 's');
+            }else{
+                ssd1306_draw_string(ssd, 5, 0, "Errou");
+                render_on_display(ssd, &frame_area);
+                print_draw_temp(0);
+                print_draw_temp(0);
+                print_draw_temp(0);
+                uart_send_uint8_as_char(uart0, 's');
+            }
+            break;
+        case 3:
+            if(userGuess == 3){
+                ssd1306_draw_string(ssd, 5, 0, "Acertou");
+                render_on_display(ssd, &frame_area);
+                print_draw_temp(3);
+                print_draw_temp(3);
+                print_draw_temp(3);
+                uart_send_uint8_as_char(uart0, 's');
+            }else{
+                ssd1306_draw_string(ssd, 5, 0, "Errou");
+                render_on_display(ssd, &frame_area);
+                print_draw_temp(1);
+                print_draw_temp(1);
+                print_draw_temp(1);
+                uart_send_uint8_as_char(uart0, 's');
+            }
+            break;
+        default:
+            break;
+        }
+
         if(false){
         // // Ler a posição do Joystick
         // adc_x_raw = adc_read();
