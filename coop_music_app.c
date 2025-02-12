@@ -964,6 +964,7 @@ int main() {
 
     test_uart_connection_device2();
 
+    uint8_t repeat;
 
     // Loop de execução
     while (true) {
@@ -1103,6 +1104,11 @@ int main() {
             break;
         default:
             break;
+        }
+
+        repeat = uart_wait_for_char(uart0);
+        if(!repeat){
+            test_uart_connection_device2();
         }
 
         if(false){
