@@ -384,35 +384,217 @@ void evaluate_response(int correctBuzzer, int userGuess, uint8_t *ssd) {
 
 
 /*
- * setup_adc_joystick:
- *   Configura o ADC para ler a posição do Joystick (utilizando um pino analógico).
+ * print_draw_temp:
+ *   Exibe desenhos temporários (apagam ao final da função) na matriz de LEDs de acordo com o parâmetro 'direction'.
+ *   Estes desenhos são usados para dar feedback visual (ex.: indicar palpite correto/errado ou chamar atenção).
  */
-void setup_adc_joystick(){
-    adc_init();               // Inicializa o ADC
-    adc_gpio_init(27);        // Inicializa o pino associado ao Joystick
-    adc_select_input(1);      // Seleciona o canal correspondente (neste caso, canal 1)
+void print_draw_temp(int direction){
+    switch (direction) {
+        // Seta vermelha para esquerda (Botão A - BitDogLab 1 - Palpite errado)
+        case 0:                       
+            npSetLED(14, 100, 0, 0);
+            npSetLED(13, 100, 0, 0);
+            npSetLED(12, 100, 0, 0);
+            npSetLED(11, 100, 0, 0);
+            npSetLED(10, 100, 0, 0);
+            npSetLED(16, 100, 0, 0);
+            npSetLED(22, 100, 0, 0);
+            npSetLED(6, 100, 0, 0);
+            npSetLED(2, 100, 0, 0);
+            sleep_ms(500);
+            npWrite();
+            sleep_ms(500);
+            break; 
+        // Seta vermelha para direita (Botão B - BitDogLab 1 - Palpite errado)   
+        case 1:
+            npSetLED(14, 100, 0, 0);
+            npSetLED(13, 100, 0, 0);
+            npSetLED(12, 100, 0, 0);
+            npSetLED(11, 100, 0, 0);
+            npSetLED(10, 100, 0, 0);
+            npSetLED(8, 100, 0, 0);
+            npSetLED(2, 100, 0, 0);
+            npSetLED(18, 100, 0, 0);
+            npSetLED(22, 100, 0, 0);
+            sleep_ms(500);
+            npWrite();
+            sleep_ms(500);
+            break;
+        // Seta verde para esquerda (Botão A - BitDogLab 1 - Palpite certo)
+        case 2:
+            npSetLED(14, 0, 100, 0);
+            npSetLED(13, 0, 100, 0);
+            npSetLED(12, 0, 100, 0);
+            npSetLED(11, 0, 100, 0);
+            npSetLED(10, 0, 100, 0);
+            npSetLED(16, 0, 100, 0);
+            npSetLED(22, 0, 100, 0);
+            npSetLED(6, 0, 100, 0);
+            npSetLED(2, 0, 100, 0);
+            sleep_ms(500);
+            npWrite();
+            sleep_ms(500);
+            break;
+        // Seta verde para direita (Botão B - BitDogLab 1 - Palpite certo)    
+        case 3:
+            npSetLED(14, 0, 100, 0);
+            npSetLED(13, 0, 100, 0);
+            npSetLED(12, 0, 100, 0);
+            npSetLED(11, 0, 100, 0);
+            npSetLED(10, 0, 100, 0);
+            npSetLED(8, 0, 100, 0);
+            npSetLED(2, 0, 100, 0);
+            npSetLED(18, 0, 100, 0);
+            npSetLED(22, 0, 100, 0);
+            sleep_ms(500);
+            npWrite();
+            sleep_ms(500);
+            break;
+        // Chama atenção para começar a emitir o som nos buzzers
+        case 4:
+            // Fase 1
+            npSetLED(12, 100, 100, 0);
+            sleep_ms(50);
+            npWrite();
+            sleep_ms(100);
+
+            // Fase 2
+            npSetLED(12, 0, 0, 0);
+
+            npSetLED(11, 100, 100, 0);
+            npSetLED(13, 100, 100, 0);
+            npSetLED(18, 100, 100, 0);
+            npSetLED(17, 100, 100, 0);
+            npSetLED(16, 100, 100, 0);
+            npSetLED(8, 100, 100, 0);
+            npSetLED(7, 100, 100, 0);
+            npSetLED(6, 100, 100, 0);
+            sleep_ms(50);
+            npWrite();
+            sleep_ms(100);
+
+            // Fase 3
+            npSetLED(11, 0, 0, 0);
+            npSetLED(13, 0, 0, 0);
+            npSetLED(18, 0, 0, 0);
+            npSetLED(17, 0, 0, 0);
+            npSetLED(16, 0, 0, 0);
+            npSetLED(8, 0, 0, 0);
+            npSetLED(7, 0, 0, 0);
+            npSetLED(6, 0, 0, 0);
+
+            npSetLED(0, 100, 100, 0);
+            npSetLED(1, 100, 100, 0);
+            npSetLED(2, 100, 100, 0);
+            npSetLED(3, 100, 100, 0);
+            npSetLED(4, 100, 100, 0);
+            npSetLED(5, 100, 100, 0);
+            npSetLED(14, 100, 100, 0);
+            npSetLED(15, 100, 100, 0);
+            npSetLED(24, 100, 100, 0);
+            npSetLED(23, 100, 100, 0);
+            npSetLED(22, 100, 100, 0);
+            npSetLED(21, 100, 100, 0);
+            npSetLED(20, 100, 100, 0);
+            npSetLED(19, 100, 100, 0);
+            npSetLED(10, 100, 100, 0);
+            npSetLED(9, 100, 100, 0);
+
+            sleep_ms(50);
+            npWrite();
+            sleep_ms(100);
+
+            // Fase 4
+            npSetLED(11, 100, 100, 0);
+            npSetLED(13, 100, 100, 0);
+            npSetLED(18, 100, 100, 0);
+            npSetLED(17, 100, 100, 0);
+            npSetLED(16, 100, 100, 0);
+            npSetLED(8, 100, 100, 0);
+            npSetLED(7, 100, 100, 0);
+            npSetLED(6, 100, 100, 0);
+
+            npSetLED(0, 0, 0, 0);
+            npSetLED(1, 0, 0, 0);
+            npSetLED(2, 0, 0, 0);
+            npSetLED(3, 0, 0, 0);
+            npSetLED(4, 0, 0, 0);
+            npSetLED(5, 0, 0, 0);
+            npSetLED(14, 0, 0, 0);
+            npSetLED(15, 0, 0, 0);
+            npSetLED(24, 0, 0, 0);
+            npSetLED(23, 0, 0, 0);
+            npSetLED(22, 0, 0, 0);
+            npSetLED(21, 0, 0, 0);
+            npSetLED(20, 0, 0, 0);
+            npSetLED(19, 0, 0, 0);
+            npSetLED(10, 0, 0, 0);
+            npSetLED(9, 0, 0, 0);
+
+            sleep_ms(50);
+            npWrite();
+            sleep_ms(100);
+
+            // Fase 5
+            npSetLED(12, 100, 100, 0);
+
+            npSetLED(11, 0, 0, 0);
+            npSetLED(13, 0, 0, 0);
+            npSetLED(18, 0, 0, 0);
+            npSetLED(17, 0, 0, 0);
+            npSetLED(16, 0, 0, 0);
+            npSetLED(8, 0, 0, 0);
+            npSetLED(7, 0, 0, 0);
+            npSetLED(6, 0, 0, 0);
+            sleep_ms(50);
+            npWrite();
+            sleep_ms(100);
+
+            break;
+    }
+
+    // Limpa a Matriz de LEDs ao final da exibição
+    npClear();
+    npWrite();
 }
 
 /*
- * setup_buttons:
- *   Inicializa e configura os pinos dos botões (Joystick, A e B) como entradas com resistor de pull-up.
+ * print_draw_fix:
+ *   Exibe desenhos “fixos” (permanecem após a função) na matriz de LEDs,
+ *   geralmente para indicar qual o buzzer está com o som ativo.
  */
-void setup_buttons(){
-
-    // Botão do Joystick
-    gpio_init(JOYSTICK_BUTTON);             
-    gpio_set_dir(JOYSTICK_BUTTON, GPIO_IN); 
-    gpio_pull_up(JOYSTICK_BUTTON);
-
-    // Botão A
-    gpio_init(A_BUTTON);             
-    gpio_set_dir(A_BUTTON, GPIO_IN); 
-    gpio_pull_up(A_BUTTON);
-
-    // Botão B
-    gpio_init(B_BUTTON);             
-    gpio_set_dir(B_BUTTON, GPIO_IN);
-    gpio_pull_up(B_BUTTON);
+void print_draw_fix(int direction){
+    npClear();
+    switch (direction) {
+        // Seta amarela para esquerda (Botão A tocando - BitDogLab 1)
+        case 0:
+            npSetLED(14, 100, 100, 0);
+            npSetLED(13, 100, 100, 0);
+            npSetLED(12, 100, 100, 0);
+            npSetLED(11, 100, 100, 0);
+            npSetLED(10, 100, 100, 0);
+            npSetLED(16, 100, 100, 0);
+            npSetLED(22, 100, 100, 0);
+            npSetLED(6, 100, 100, 0);
+            npSetLED(2, 100, 100, 0);
+            sleep_ms(200);
+            npWrite();
+            break;
+        // Seta amarela para direita (Botão B tocando - BitDogLab 1)
+        case 1:
+            npSetLED(14, 100, 100, 0);
+            npSetLED(13, 100, 100, 0);
+            npSetLED(12, 100, 100, 0);
+            npSetLED(11, 100, 100, 0);
+            npSetLED(10, 100, 100, 0);
+            npSetLED(8, 100, 100, 0);
+            npSetLED(2, 100, 100, 0);
+            npSetLED(18, 100, 100, 0);
+            npSetLED(22, 100, 100, 0);
+            sleep_ms(200);
+            npWrite();
+            break;
+    }
 }
 
 
